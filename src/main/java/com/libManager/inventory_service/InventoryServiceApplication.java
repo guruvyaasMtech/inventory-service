@@ -1,15 +1,27 @@
 package com.libManager.inventory_service;
 
+import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+
 
 @SpringBootApplication
-@EnableDiscoveryClient
-public class InventoryServiceApplication {
+@EnableRabbit
+public class InventoryServiceApplication implements ApplicationListener<ContextRefreshedEvent> {
+    @Autowired
+    private AmqpAdmin amqpAdmin;
 
-	public static void main(String[] args) {
-		SpringApplication.run(InventoryServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(InventoryServiceApplication.class, args);
+    }
 
-}
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        amqpAdmin.declareExchange(new TopicExchange("book.exchange"));
+        System.out.println("EXCHANGE DECLARED IN APPLICATION LISTENER");
+    }}
