@@ -37,4 +37,35 @@ public class InventoryEventListener {
             System.err.println("Error processing BookCreatedEvent: " + e.getMessage());
         }
     }
+    @RabbitListener(queues = "book.updated.queue")
+    @Transactional
+    public void handleBookUpdatedEvent(org.springframework.amqp.core.Message message) {
+        try {
+            String messageBody = new String(message.getBody(), "UTF-8");
+            String[] parts = messageBody.split("/");
+            if (parts.length>0) {
+                Long bookId = Long.parseLong(parts[0]);
+                String action = parts[1];
+                int change=1;
+                if(action.equals("checkout")) {
+                	change=-1;
+                }
+
+                Inventory inventory = inventoryRepository.findById(bookId).orElse(null);
+                if (inventory != null) {
+                    int newQuantity = inventory.getQuantity() + change;
+                    inventory.setQuantity(newQuantity);
+                    inventoryRepository.save(inventory);
+                    System.out.println("Inventory updated for book ID: " + bookId + " New Quantity: " + newQuantity);
+                } else {
+                    System.out.println("Inventory not found for book ID: " + bookId);
+                }
+            } else {
+                System.err.println("Invalid message format: " + messageBody);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error processing BookUpdatedEvent: " + e.getMessage());
+        }
+    }
 }
